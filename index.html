@@ -6,165 +6,119 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="index.css">
 
-  <!-- 🔥 Firebase (ONLY ONE BLOCK) -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-    import {
-      getFirestore,
-      collection,
-      addDoc,
-      setDoc,
-      doc,
-      serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+  <!--  Firebase (ONLY ONE BLOCK) -->
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBaNgaYdgk44hMZdZH7t7EurEAEDg4MPSs",
-      authDomain: "clicklogs-project-739db.firebaseapp.com",
-      projectId: "clicklogs-project-739db",
-      storageBucket: "clicklogs-project-739db.firebasestorage.app",
-      messagingSenderId: "967426056327",
-      appId: "1:967426056327:web:4c2669b1ba38f0f4b4d822"
-    };
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+  import {
+    getFirestore,
+    collection,
+    addDoc,
+    setDoc,
+    doc,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+  const firebaseConfig = {
+    apiKey: "AIzaSyBaNgaYdgk44hMZdZH7t7EurEAEDg4MPSs",
+    authDomain: "clicklogs-project-739db.firebaseapp.com",
+    projectId: "clicklogs-project-739db",
+    storageBucket: "clicklogs-project-739db.firebasestorage.app",
+    messagingSenderId: "967426056327",
+    appId: "1:967426056327:web:4c2669b1ba38f0f4b4d822"
+  };
 
-    window.db = db;
-    window.fbCollection = collection;
-    window.fbAddDoc = addDoc;
-    window.fbSetDoc = setDoc;
-    window.fbDoc = doc;
-    window.fbServerTimestamp = serverTimestamp;
-  </script>
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-  <!-- 🔥 MAIN JS -->
+  // 🔥 make available globally
+  window.db = db;
+  window.fbCollection = collection;
+  window.fbAddDoc = addDoc;
+  window.fbSetDoc = setDoc;
+  window.fbDoc = doc;
+  window.fbServerTimestamp = serverTimestamp;
+</script>
+
   <script type="text/javascript">
 
-    var totalTouchDuration = 0;
-    var tapCounter = 0;
-    var startTap = 0, endTap = 0;
-    var tapLogsArray = [];
-    var tapLimit = 5;
-    var uniqueIdentifier = 0;
-    var dependentVariable = "";
-    var showFeedback = false;
-    var interfaceSequence = 1;
-    var interfaceVariations = 2;
+var totalTouchDuration = 0;
+var tapCounter = 0;
+var startTap = 0, endTap = 0;
+var tapLogsArray = [];
+var tapLimit = 5; // can change to 50 later
+var uniqueIdentifier = 0;
+var dependentVariable = "";
+var showFeedback = false;
+var interfaceSequence = 1;
+var interfaceVariations = 2;
 
-    function onLoad() {
-      const el = document.getElementById('tapHere');
-      const d = new Date();
+function onLoad() {
+  const el = document.getElementById('tapHere');
+  const d = new Date();
 
-      showFeedback = (d.getTime() % 2 === 0);
-      uniqueIdentifier = d.getTime().toString();
+  showFeedback = (d.getTime() % 2 === 0);
+  uniqueIdentifier = d.getTime().toString();
 
-      ["mouseup", "mousedown", "touchstart", "touchend"].forEach(e => {
-        el.addEventListener(e, tapityTap);
-      });
-    }
+  ["mouseup", "mousedown", "touchstart", "touchend"].forEach(e => {
+    el.addEventListener(e, tapityTap);
+  });
+}
 
-    function saveDependentVariable(val) {
-      dependentVariable = val;
-      document.getElementById("buttoncontainer").style.display = "none";
-      document.getElementById("container").style.display = "block";
-    }
+function saveDependentVariable(val) {
+  dependentVariable = val;
+  document.getElementById("buttoncontainer").style.display = "none";
+  document.getElementById("container").style.display = "block";
+}
 
-    async function syncToServer() {
-      try {
-        const parsedTaps = tapLogsArray.map(t => JSON.parse(t));
+function tapityTap(e) {
+  const now = new Date().getTime();
 
-        for (const tap of parsedTaps) {
-          const duration = tap.endTimestamp - tap.startTimestamp;
+  if (e.type === "mousedown" || e.type === "touchstart") {
+    startTap = now;
+  }
 
-          await window.fbAddDoc(
-            window.fbCollection(window.db, "tap_logs"),
-            {
-              sessionId: uniqueIdentifier,
-              platform: dependentVariable,
-              tapSequenceNumber: tap.tapSequenceNumber,
-              startTimestamp: tap.startTimestamp,
-              endTimestamp: tap.endTimestamp,
-              durationMs: duration,
-              interfaceType: tap.interface,
-              interfaceSequence: tap.interfaceSequence,
-              createdAt: window.fbServerTimestamp()
-            }
-          );
-        }
+  if (e.type === "mouseup" || e.type === "touchend") {
+    endTap = now;
 
-        const interfacesSeen = [...new Set(parsedTaps.map(t => t.interface))];
+    tapCounter++;
 
-        await window.fbSetDoc(
-          window.fbDoc(window.db, "sessions", uniqueIdentifier),
-          {
-            sessionId: uniqueIdentifier,
-            platform: dependentVariable,
-            interfaceCount: interfacesSeen.length,
-            completedBothVariations: interfacesSeen.length >= 2,
-            tapCount: parsedTaps.length,
-            createdAt: window.fbServerTimestamp()
-          }
-        );
+    const tap = {
+      tapSequenceNumber: tapCounter,
+      startTimestamp: startTap,
+      endTimestamp: endTap,
+      interfaceSequence: interfaceSequence,
+      interface: showFeedback ? "feedbackshown" : "nofeedback"
+    };
 
-        alert("Data saved successfully!");
+    tapLogsArray.push(JSON.stringify(tap));
 
-      } catch (err) {
-        console.error(err);
-        alert("Error saving data");
+    if (tapCounter >= tapLimit) {
+      if (interfaceSequence < interfaceVariations) {
+        alert("Continue tapping for second interface");
+
+        interfaceSequence++;
+        tapCounter = 0;
+        showFeedback = !showFeedback;
+      } else {
+        syncToServer();
+		tapCounter = 0;
+		tapLogsArray = [];
+		interfaceSequence = 1;
+		showFeedback = false;
       }
     }
+  }
+}
 
-    function tapityTap(e) {
-      const now = new Date().getTime();
 
-      if (e.type === "mousedown" || e.type === "touchstart") {
-        startTap = now;
-      }
-
-      if (e.type === "mouseup" || e.type === "touchend") {
-        endTap = now;
-        const duration = endTap - startTap;
-
-        tapCounter++;
-        totalTouchDuration += duration;
-
-        const tap = {
-          tapSequenceNumber: tapCounter,
-          startTimestamp: startTap,
-          endTimestamp: endTap,
-          interfaceSequence: interfaceSequence,
-          interface: showFeedback ? "feedbackshown" : "nofeedback"
-        };
-
-        tapLogsArray.push(JSON.stringify(tap));
-
-        if (tapCounter >= tapLimit) {
-          interfaceSequence++;
-
-          if (interfaceSequence >= interfaceVariations) {
-            syncToServer();
-			console.log(" syncToServer called");
-          } else {
-            alert("Switch interface and continue");
-            tapCounter = 0;
-            totalTouchDuration = 0;
-            showFeedback = !showFeedback;
-          }
-        }
-      }
-    }
-
-	async function syncToServer() {
+async function syncToServer() {
   try {
-    console.log("syncToServer started");
 
     const parsedTaps = tapLogsArray.map(t => JSON.parse(t));
-    console.log("Parsed taps:", parsedTaps);
 
+    // 🔥 Save tap logs
     for (const tap of parsedTaps) {
-      console.log("Saving tap:", tap);
-
       await window.fbAddDoc(
         window.fbCollection(window.db, "tap_logs"),
         {
@@ -181,28 +135,31 @@
       );
     }
 
-    console.log("✅ Tap logs saved");
+    // 🔥 Calculate interfaces seen
+    const interfacesSeen = [...new Set(parsedTaps.map(t => t.interface))];
 
+    // 🔥 Save session summary
     await window.fbSetDoc(
       window.fbDoc(window.db, "sessions", uniqueIdentifier),
       {
         sessionId: uniqueIdentifier,
         platform: dependentVariable,
-        tapCount: parsedTaps.length
+        interfaceCount: interfacesSeen.length,
+        completedBothVariations: interfacesSeen.length >= 2,
+        tapCount: parsedTaps.length,
+        createdAt: window.fbServerTimestamp()
       }
     );
-
-    console.log("Session saved");
 
     alert("Data saved successfully!");
 
   } catch (err) {
-    console.error("Firestore error:", err);
+    console.error(err);
     alert("Error saving data");
   }
 }
 
-  </script>
+</script>
 
 </head>
 
