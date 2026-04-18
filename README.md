@@ -43,8 +43,7 @@ The system allows users to perform tapping tasks, while recording interaction me
 ## Deployment
 
 The application is deployed using GitHub Pages and can be accessed via:
-
-👉 [Paste your GitHub Pages URL here]
+(https://samadhi-sanchitha.github.io/clicklogs-ui/)
 
 ---
 
